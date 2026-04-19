@@ -209,6 +209,36 @@ Think of it like a human reviewing their journal and updating their mental model
 
 The goal: Be helpful without being annoying. Check in a few times a day, do useful background work, but respect quiet time.
 
+## Development Standards (Ticketing System Project)
+
+When working on the ticketing system project:
+
+### Theme System
+- Use `src/assets/css/theme.css` for all global styling
+- Reference CSS variables: `var(--color-primary)`, `var(--space-md)`, etc.
+- Use reusable component classes: `.panel`, `.card`, `.table`
+- Use utility classes: `.mt-3`, `.text-primary`, `.flex gap-2`
+- Use button classes: `.btn .btn-primary .btn-secondary .btn-danger`
+
+### SVG Editor Patterns
+- SVG stored as XML TEXT in database (not files)
+- Stadium-centric design with `stadium_code` foreign keys
+- API services return raw arrays/objects (not wrapped)
+- Smart save: new record if description changes, update if unchanged
+- Preserve pattern fills via `<defs>` and `data-image-url`
+
+### Git Workflow
+- Main repo: `github.com/tigerax1986/ticketing-system`
+- Agent workspace: `github.com/tigerax1986/tiger-manager-workspace`
+- Use descriptive commit messages with prefixes (feat/fix/docs)
+- Push to both repos when relevant
+
+### Code Organization
+- Pages in `src/pages/`, components in `src/components/`
+- Use `@shared` package for services and shared components
+- TypeScript for type safety, Vue 3 Composition API
+- PostgreSQL for data, CSS Variables for theming
+
 ## Make It Yours
 
 This is a starting point. Add your own conventions, style, and rules as you figure out what works.
