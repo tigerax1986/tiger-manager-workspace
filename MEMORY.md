@@ -36,6 +36,7 @@
 - **Color Harmony**: Primary blue (`#3b82f6`), Secondary gray (`#f1f5f9`), Danger red (`#dc2626`)
 - **Accessible Contrast**: Ensure text has sufficient contrast against backgrounds
 - **Responsive Design**: Use CSS Grid/Flexbox with media queries for mobile support
+- **Avoid Redundant Text**: Place detailed instructions in help documentation, not cluttering UI space
 
 ## Project History
 
