@@ -16,6 +16,7 @@
 - **API Response Format**: Services return raw arrays/objects, not `ApiResponse` wrappers
 - **Smart Save Logic**: Creates new record if description changes, updates existing if unchanged
 - **Pattern Fill Preservation**: SVG patterns stored in `<defs>` with `data-image-url` attribute mapping
+- **Text Tool Support**: Text shapes with font properties (fontFamily, fontSize, fontWeight, fontStyle, textAnchor) stored as shape attributes, editable via properties panel
 
 ### Frontend Architecture
 - **Component Organization**: Page components in `src/pages/`, shared components in `src/components/`
@@ -43,6 +44,7 @@
 - Created comprehensive theme system with CSS variables and reusable components
 - Added polygon position editing and background image support
 - Established development standards for consistent UI across pages
+- Implemented Text Tool with font controls, position editing, and SVG save/load support
 
 ### Key Decisions
 1. **Single Theme File**: Consolidated all global styles into `theme.css` for easy maintenance
