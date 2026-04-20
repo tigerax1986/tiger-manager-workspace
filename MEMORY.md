@@ -18,6 +18,7 @@
 - **Pattern Fill Preservation**: SVG patterns stored in `<defs>` with `data-image-url` attribute mapping
 - **Text Tool Support**: Text shapes with font properties (fontFamily, fontSize, fontWeight, fontStyle, textAnchor) stored as shape attributes, editable via properties panel
 - **Shape Labels**: Labels as properties of shapes (rectangle, circle, polygon) with font controls, relative positioning, rotation, and center alignment
+- **Multi‑Select**: Support Ctrl/Cmd+click for selecting multiple shapes, with group movement via mouse drag or arrow keys, and property editing disabled for multi‑selection
 
 ### Frontend Architecture
 - **Component Organization**: Page components in `src/pages/`, shared components in `src/components/`
