@@ -64,6 +64,61 @@
 - Polygon position editing requires translating all points together, not just one coordinate
 - Database migrations should be idempotent with `IF NOT EXISTS` clauses
 
+### System Cleanup & Process Management (April 2026)
+- Multiple Vite dev servers can accumulate on ports 3002–3006 if processes aren't terminated properly
+- Cleanup procedure: identify extra boxoffice instances via `ss -tlnp` and kill by PID
+- Keep essential services: websales (3000), boxoffice (3001), API (8000)
+- Always verify remaining processes with `ss -tlnp | grep node` after cleanup
+
+### April 2026 - Email Designer Development
+- Created EmailDesigner page following all development standards
+- **Removed stadium dependency**: Modified email_templates table to drop stadium_code column (migration 006), making templates globally scoped
+- Implemented placeholder service with master list consistent across all designers (updated to remove AdultPrice, ConcessionPrice, RefundDate; added PriceBand)
+- Two‑view editor: HTML code, Live preview (Rich text removed due to functionality issues)
+- Smart save logic: overwrites template if same name/type, creates new otherwise
+- Used theme system (CSS variables, reusable components, utility classes)
+- Added API endpoints for CRUD operations on email templates (global)
+- **No stadium association**: Email templates are not stadium‑specific; stadium selection removed from UI
+- Integrated with existing shared package services
+- Placeholder format: <<PlaceholderName>> as per specification
+- **Layout** (April 20): Three‑column design – left: tools (save/delete/clear/download/view mode), middle: canvas with template name/type/load dropdown, right: placeholders
+- **Placeholders**: Categorized expandable sections (Product Details, Customer Details, Payment Details, Delivery & Refunds) with vertical button lists, collapsed by default
+- **UI fixes**: Help button height matched to SVG editor; font options removed
+- **Checked insert scripts**: SVG data table migration uses ON CONFLICT clauses to prevent duplicate inserts during development
+
+## Future Development Plans
+
+### Shared – Placeholders & Database Foundations (April 2026)
+**Purpose**: Foundational work supporting TicketDesigner, EmailDesigner, and Stadium Maintenance.
+
+**Key Requirements**:
+- Follow all development standards from MEMORY.md (theme system, reusable components, TypeScript, Vue 3 Composition API)
+- Stadium-centric design with foreign key relationships
+- API services return raw arrays/objects (no ApiResponse wrappers)
+- Smart save logic: create new record if description changes, update if unchanged
+- Pattern fill preservation for SVGs
+- Text tool support with full font properties and shape labels
+- Multi-select support (Ctrl/Cmd+click)
+
+**Tasks**:
+1. **Master Placeholder Service**
+   - Create central service in @shared package
+   - Return 100% consistent master list across all designers
+   - Include placeholders: MatchDescription, PayRef, Stand, Area, Row, Seat, CustomerName, Price, Date, Time, K/O, TicketType, PriceBand, EventName, Venue, SeatNumber, CustomerEmail, OrderNumber, TotalAmount, Quantity, PurchaseDate, DeliveryMethod, RefundAmount, etc.
+   - Each placeholder must provide sample rendering text (e.g., MatchDescription → "Manchester United vs Arsenal")
+
+2. **Database Tables**
+   - Design and create migration scripts for:
+     - `ticket_designs` (TicketDesigner layouts)
+     - `email_templates` (EmailDesigner, with type + is_default columns)
+     - `stadiums`, `stands`, `areas`, `seats` (normalized hierarchy to replace old StadiumData/StadiumVisual files)
+   - Follow stadium-centric patterns and smart-save logic exactly
+
+**Notes**:
+- This is a shared foundation job (assigned to separate agent sessions via Discord)
+- All new code must adhere to established development standards
+- Expandable placeholder list for future requirements
+
 ## Personal Preferences
 
 ### Development Style
@@ -87,6 +142,7 @@
 - Values maintainable, well-documented code
 - Interested in SVG editing for stadium layouts
 - Planning to delegate work to multiple agents
+- Using Discord channels (agent1, agent2, agent3) for parallel agent sessions with isolated contexts
 
 ### Project Goals
 - Complete SVG editor for stadium layout creation
@@ -94,3 +150,8 @@
 - Consistent UI across all application pages
 - Scalable architecture for future features
 - Well-documented code for maintainability
+- Master placeholder service for consistent templating across TicketDesigner, EmailDesigner
+- TicketDesigner system for ticket layout creation
+- EmailDesigner system for email templates
+- Normalized stadium hierarchy (stadiums, stands, areas, seats) to replace legacy files
+- Multi-agent parallel workflow via Discord channels (agent1, agent2, agent3)

@@ -1,1 +1,7 @@
 ticketing-system/
+
+# Temporary files
+*.txt
+
+# Dream logs
+memory/.dreams/
