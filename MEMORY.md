@@ -86,6 +86,145 @@
 - **UI fixes**: Help button height matched to SVG editor; font options removed
 - **Checked insert scripts**: SVG data table migration uses ON CONFLICT clauses to prevent duplicate inserts during development
 
+### April 2026 - Stadium Maintenance Development
+- **Goal**: Replace old flat‑file system (StadiumData/StadiumVisual) with hierarchical database structure (Stadium → Stand → Area → Seat).
+- **Hierarchy**: Removed Seat Blocks level; seats generated directly from row definitions.
+- **UI Components**: Created StadiumMaintenance.vue with tree navigation (left panel) and grid‑based seat editor (right panel).
+- **Modal Components**: StadiumModal, StandModal, AreaModal, SeatModal, AddRowsModal.
+- **Database Migrations**:
+  - `004_stadium_maintenance.sql` – creates stands, areas, seats, seat_blocks tables.
+  - `005_add_seat_offset.sql` – adds `offset_x` column for per‑seat horizontal offset.
+  - `011_add_row_label.sql` – adds `row_label` column for custom row labels (A, B, AA, ZZ).
+- **API Endpoints**: Full CRUD for stadiums, stands, areas, seats; seat‑generation via `POST /api/seats/generate‑from‑block`.
+- **Row‑Based Seat Generation**:
+  - User defines rows via AddRowsModal (label, sequence, seat range).
+  - Row definitions stored locally until seats are generated.
+  - Each row becomes a seat‑block with `rows: 1`.
+- **Grid Canvas**:
+  - Displays seats aligned by seat number across rows.
+  - Empty slots shown as dashed boxes for missing seat numbers.
+  - Row ordering: higher `row_sequence` appears at top (closer to back), lower sequence at bottom (closer to pitch).
+- **UI Simplification (April 22)**:
+  - Removed old bulk seat‑generation form.
+  - Moved “Add Rows” button to panel header.
+  - Fixed overlapping buttons in row‑definitions editor.
+- **Schema Simplification (Completed – April 22)**:
+  - Dropped `row_number` column (migration 012).
+  - New unique constraint on `(stadium_code, stand_code, area_code, row_label, seat_number)`.
+  - `row_label` set to NOT NULL, default `'Row ' || row_sequence`.
+  - Index on `(row_sequence, seat_number)` for sorting.
+  - API & frontend updated accordingly.
+- **Seat Colours System (Completed – April 22)**:
+  - Created `seat_colours` table (UK spelling) with hex colour values.
+  - Migration `015_seat_colours_table.sql` inserts default colours for boxoffice stadium‑maintenance.
+  - Colours stored as hex codes (e.g., `#f1f5f9`) not CSS variables for portability.
+  - API endpoints at `/api/seat-colours` with CRUD operations.
+  - Frontend service `seatColourService` fetches colours for dynamic seat styling.
+  - Seat legend/key displays colour swatches grouped by type (restriction, category, default).
+  - Selected seats override base colours with consistent blue (`var(--color-primary)`).
+- **Development Standards**:
+  - Follows theme system (`theme.css`, CSS variables, reusable components).
+  - Uses `@shared` services for API communication.
+  - TypeScript interfaces for type safety.
+  - Consistent error handling with toast notifications.
+- **Testing Context**:
+  - Test sequence: 1=A (bottom), 2=B, 3=C (top).
+  - Seat ranges: Row A seats 1‑5, Row B seats 3‑5, Row C seats 3‑5.
+  - Expected grid alignment with empty slots for missing seat numbers.
+
+### April 2026 - TicketDesigner Development
+
+**Goal**: Create a ticket‑layout editor for Print‑at‑Home (PDF) and BOCA printer output, modeled on the existing SVG Editor page.
+
+**Core Features**:
+- **Canvas with rulers & grid**: A4 default, paper‑size options (A4, A5, A6, Letter, Custom), orientation toggle.
+- **Placeholder drag‑and‑drop**: Left‑side panel with placeholders (MatchDescription, DateTime, SeatInfo, TicketNumber, Price, Barcode, QRCode).
+- **Output‑mode toggle**: Switch between Print‑at‑Home (PDF) and BOCA (printer command).
+- **Real‑time preview**: Grid lines, rulers in mm, live placeholder rendering with sample data.
+- **Properties panel**: Right‑side panel for editing selected placeholder properties (position, size, rotation, font, colors).
+- **Smart save/load/delete**: Layouts stored in `ticket_layouts` table, filtered by output mode.
+- **Background images**: URL‑based background images with CORS handling and local‑image support (`public/images/`).
+- **Advanced placeholder features**:
+  - Auto‑sizing based on text length and font properties.
+  - Drag‑and‑drop movement with arrow‑key nudging.
+  - Multi‑select (Ctrl/Cmd+click) for group movement.
+  - QR‑code size field with live debounced updates.
+  - Barcode/QR‑code graphic generation using `jsbarcode` and `qrcode` libraries.
+
+**Database Schema** (`ticket_layouts` table):
+- `id` UUID PRIMARY KEY
+- `description` TEXT NOT NULL
+- `paper_size` TEXT NOT NULL
+- `orientation` TEXT NOT NULL
+- `output_mode` TEXT NOT NULL ("print‑at‑home" or "boca")
+- `layout_data` JSONB NOT NULL (stores canvas properties, placeholders, background image URL)
+- Unique constraint: `(description, output_mode)`
+- **No stadium dependency**: Originally had `stadium_code` column; removed via migration 007.
+
+**Migrations**:
+- `005_ticket_layout_tables.sql` – initial table creation (with stadium_code).
+- `007_remove_stadium_from_ticket_layouts.sql` – drops stadium_code column, adds unique constraint.
+
+**API Endpoints** (`/api/ticket‑layouts`):
+- `GET /` – returns layouts filtered by `output_mode` query param.
+- `GET /:id` – returns single layout.
+- `POST /` – creates new layout.
+- `PUT /:id` – updates existing layout.
+- `DELETE /:id` – deletes layout.
+- **Smart‑save logic**: If description unchanged, update existing; if changed, create new.
+
+**Frontend Architecture**:
+- **Page**: `apps/boxoffice/src/pages/TicketDesigner.vue`
+- **Structure**: Three‑column layout (left: placeholders, middle: canvas, right: properties).
+- **State management**: Vue 3 Composition API with reactive refs, computed properties.
+- **Styling**: Full adherence to theme system (`theme.css`, CSS variables, reusable components).
+- **Services**: `ticketLayoutService` in `@shared` package.
+- **External libraries**: `qrcode`, `jsbarcode` for graphic generation.
+
+**Key Implementation Details**:
+1. **Grid & rulers**: Ticks generated in mm, converted to pixels (1mm = 3.779528px at 96 DPI).
+2. **Placeholder auto‑size**: Uses off‑screen canvas to measure text dimensions.
+3. **Numeric input handling**: Raw string bindings with validation on blur to avoid Vue `v‑model.number` rounding loops.
+4. **QR‑code sizing**: Exact mm↔px conversions, formatted display (1 decimal place), debounced live updates.
+5. **Background image CORS**: Image preloading with `crossOrigin='anonymous'`, error states, local‑image support.
+6. **Multi‑select**: Global mouse/keyboard listeners for dragging and arrow‑key movement.
+7. **Undo/redo**: History stack limited to 50 actions.
+
+**Lessons Learned**:
+- **CORS issues**: Free image hosts (Imgbox) block cross‑origin requests; provide local‑image alternative.
+- **Vue numeric inputs**: `type="number"` with `v‑model.number` causes rounding loops; use text inputs with validation.
+- **QR‑code pixel rounding**: Exact conversions prevent values like "60" becoming "60.1".
+- **Declaration order**: Computed properties that depend on reactive refs must be declared after those refs.
+- **Grid alignment**: Use CSS Grid layout (not absolute positioning) for precise axis‑canvas alignment.
+
+**Known Limitations / Future Enhancements**:
+- Multi‑select property editing is basic (only movement).
+- Print preview buttons are stubs (no actual PDF/BOCA generation).
+- Placeholder rotation is not visually rendered (only property).
+- BOCA example is static; no live BOCA‑command generation.
+- No master placeholder service yet (shared across TicketDesigner, EmailDesigner).
+
+**Testing Notes**:
+- **Local image test**: `http://localhost:3001/images/placeholder.svg`
+- **CORS‑friendly external test**: `https://picsum.photos/800/600`
+- **Layout filtering**: Changing output mode clears current layout selection.
+- **Smart save**: Try saving same description twice (updates) vs. new description (creates new).
+
+**Related Files**:
+- `apps/boxoffice/src/pages/TicketDesigner.vue` – main component.
+- `apps/api/src/migrations/005_ticket_layout_tables.sql` – initial schema.
+- `apps/api/src/migrations/007_remove_stadium_from_ticket_layouts.sql` – stadium removal.
+- `apps/api/src/index.ts` – API endpoints.
+- `packages/shared/src/services/api.ts` – `ticketLayoutService`.
+- `packages/shared/src/types/index.ts` – `TicketLayout` interface.
+- `apps/boxoffice/public/images/placeholder.svg` – local test image.
+
+**Servers**:
+- Frontend: `http://localhost:3001/ticket‑designer`
+- API: `http://localhost:8000/api/ticket‑layouts`
+
+---
+
 ## Future Development Plans
 
 ### Shared – Placeholders & Database Foundations (April 2026)
