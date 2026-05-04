@@ -56,6 +56,10 @@
 3. **Reusable Patterns**: Created `.panel`, `.card`, `.table` classes for consistent components
 4. **Button System**: Standardized button styling with variants and sizes
 5. **SVG Storage**: Database storage over file system for better data management
+6. **Age Calc for Price Bands**: Boolean flag auto-assigns price band based on customer age during online registration
+7. **Paid vs Free Band Split**: A–Z for paid bands, 0–9 for free-of-charge bands, stored in same table with sort_order
+8. **Overlay System**: Reusable pricing/restriction configs applied to seat subsets, with sentinel values ('exclude' / null) for DB storage
+9. **Turnstile Columns**: `turnstile_from`/`turnstile_to` added to seats for entry gate ranges, validated by formatTurnstileInput
 
 ### Lessons Learned
 - Early investment in theme system pays off in long-term maintenance
@@ -69,6 +73,40 @@
 - Cleanup procedure: identify extra boxoffice instances via `ss -tlnp` and kill by PID
 - Keep essential services: websales (3000), boxoffice (3001), API (8000)
 - Always verify remaining processes with `ss -tlnp | grep node` after cleanup
+
+### May 2026 - Price Band Maintenance Development
+- Created PriceBandMaintenance.vue following all development standards
+- **Database**: `price_bands` table with columns: code, description, age_from, age_to, web_visible, active, age_calc, sort_order
+- **26 paid bands (A–Z)**: Only A (Adult 18-64), J (Junior 4-15), O (OAP 65+) active + web_visible + age_calc by default
+- **10 free bands (0–9)**: All inactive by default, intended for carers, complimentary, etc.
+- **Age Calc**: Boolean flag enabling auto-assignment of price band during online registration based on customer's birth date
+- **Drag-to-reorder**: Click-and-drag reordering with sort_order persisted via `POST /api/price-bands/reorder`
+- **Two-panel UI**: Paid bands (A–Z) shown first, Free of Charge bands (0–9) below, each in separate panel
+- **Inline editing**: Click Edit to edit description, age_from, age_to, web_visible, active, age_calc inline
+- **API endpoints**: `GET /api/price-bands`, `PUT /api/price-bands/:id`, `POST /api/price-bands/reorder`
+- **No Help button originally**: Added 📘 Help button with help doc in this session (May 4)
+- **Migration**: `price_bands.001.sql` with ON CONFLICT DO NOTHING seed data
+- **Charge type removed**: Dropped obsolete `charge_type` column during migration
+
+### April-May 2026 - Stadium Maintenance Updates (Post-April 22)
+- **Overlay System**: Full CRUD for overlays via OverlayManagerModal, applied per seat subset
+  - Overlay code + description + price code + restriction + category + turnstile range
+  - 'No Overlay' sentinel writes 'exclude' to DB; 'Keep Current' writes null
+  - Deleting overlay cascades to delete all overlay seats
+  - Offset column hidden in overlay mode (seat-global, not overlay-specific)
+  - Tree shows asterisks (*) on stands/areas with overlay data
+- **Turnstile Fields**: `turnstile_from`/`turnstile_to` VARCHAR(10) on seats table
+  - Accepts A–Z letters or 0–200 numbers, validated by `formatTurnstileInput`
+  - Used on row definitions, single seat, batch edit
+- **Available Boolean**: Replaced `status` VARCHAR with `available` BOOLEAN
+  - TRUE = for sale, FALSE = unavailable/blocked (UA colour)
+  - In overlay mode preserves null for unchanged
+- **Row Code**: Renamed from `row_label` to `row_code` for clarity
+- **Delete All button removed**: From main UI, replaced with "⋮" menu; cascading deletes handle overlay seats
+- **Atomic sequence reorder**: `POST /api/seats/batch/reorder-sequence` prevents race conditions
+- **Add from Selection**: Row definitions modal with auto-calc "To Seat", contiguity validation, uppercase enforcement
+- **Seat grid refinements**: Auto-fit at 0.95 margin, zoom in both modes, user-select none, expandable row groups
+- **Colour key/legend**: Swatches by type (restriction, category, default), selected seats get blue override
 
 ### April 2026 - Email Designer Development
 - Created EmailDesigner page following all development standards
@@ -294,3 +332,11 @@
 - EmailDesigner system for email templates
 - Normalized stadium hierarchy (stadiums, stands, areas, seats) to replace legacy files
 - Multi-agent parallel workflow via Discord channels (agent1, agent2, agent3)
+### Help Documentation Split (May 2026)
+- **User view**: Functional, operational docs for end users — what the page does, how to use it, workflows, troubleshooting
+- **Developer view**: Schema definitions, API endpoints, migration details, seed data, indexes/triggers, code conventions
+- **Toggle**: Small 🔒/🔓 toggle bottom-left of HelpModal footer (same row as Close). Defaults to user view. No password yet.
+- **Markers**: Use `<!-- devinfo -->` / `<!-- /devinfo -->` HTML comment markers in `.md` files to wrap developer-only content
+- **Filtering**: HelpModal's `filteredContent` computed strips devinfo blocks when `showDevInfo = false`, removes markers when `true`
+- **Applied to**: All 11 help docs in `apps/boxoffice/src/docs/`
+- **Removed from user view**: Default active band lists, migration details, seed data, schema tables, API request/response formats
